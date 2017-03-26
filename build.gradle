@@ -21,13 +21,13 @@ apply plugin: 'com.jfrog.bintray'
 apply from: "gradle/integrationTest.gradle"
 
 group = 'de.undercouch'
-version = '3.2.1-SNAPSHOT'
-sourceCompatibility = '1.6'
-targetCompatibility = '1.6'
+version = '4.0.0-SNAPSHOT'
+sourceCompatibility = '1.7'
+targetCompatibility = '1.7'
 
 idea {
   project {
-    languageLevel = '1.6'
+    languageLevel = '1.7'
     ipr {
       withXml { provider ->
         provider.node.component
