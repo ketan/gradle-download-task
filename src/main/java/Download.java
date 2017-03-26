@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package de.undercouch.gradle.tasks.download;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -28,6 +26,9 @@ import org.gradle.api.Task;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
+
+import de.undercouch.gradle.tasks.download.DownloadAction;
+import de.undercouch.gradle.tasks.download.DownloadSpec;
 
 /**
  * Downloads a file and displays progress. Example:

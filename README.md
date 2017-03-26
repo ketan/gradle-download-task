@@ -42,8 +42,6 @@ Usage
 After you applied the plugin configuration (see above) you can use the `Download` task as follows:
 
 ```groovy
-import de.undercouch.gradle.tasks.download.Download
-
 task downloadFile(type: Download) {
     src 'http://www.example.com/index.html'
     dest buildDir
@@ -191,8 +189,6 @@ given value and fails if it doesn't.
 Use the task as follows:
 
 ```groovy
-import de.undercouch.gradle.tasks.download.Verify
-
 task verifyFile(type: Verify) {
     src new File(buildDir, 'file.ext')
     algorithm 'MD5'
@@ -203,9 +199,6 @@ task verifyFile(type: Verify) {
 You can combine the download task and the verify task as follows:
 
 ```groovy
-import de.undercouch.gradle.tasks.download.Download
-import de.undercouch.gradle.tasks.download.Verify
-
 task downloadFile(type: Download) {
     src 'http://www.example.com/index.html'
     dest buildDir

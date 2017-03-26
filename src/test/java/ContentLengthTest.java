@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package de.undercouch.gradle.tasks.download;
-
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
@@ -32,109 +30,83 @@ import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.handler.ContextHandler;
 
 /**
- * Tests if the plugin can handle redirects
+ * Tests if the plugin can handle invalid or missing Content-Length header
  * @author Michel Kraemer
  */
-public class RedirectTest extends TestBase {
-    private static final String REDIRECT = "redirect";
-    private int redirects = 0;
-    private boolean circular = false;
+public class ContentLengthTest extends TestBase {
+    private static final String CONTENT_LENGTH = "content-length";
+    private String contentLength;
     
     @Override
     protected Handler[] makeHandlers() throws IOException {
-        ContextHandler redirectHandler = new ContextHandler("/" + REDIRECT) {
+        ContextHandler contentLengthHandler = new ContextHandler("/" + CONTENT_LENGTH) {
             @Override
             public void handle(String target, HttpServletRequest request,
                     HttpServletResponse response, int dispatch)
                             throws IOException, ServletException {
-                if (redirects > 0) {
-                    redirects--;
-                    if (circular) {
-                        response.sendRedirect("/" + REDIRECT);
-                    } else {
-                        response.sendRedirect("/" + REDIRECT + "?r=" + redirects);
-                    }
-                } else {
-                    response.setStatus(200);
-                    PrintWriter rw = response.getWriter();
-                    rw.write("r: " + redirects);
-                    rw.close();
+                response.setStatus(200);
+                if (contentLength != null) {
+                    response.setHeader("Content-Length", contentLength);
                 }
+                PrintWriter rw = response.getWriter();
+                rw.write("cl: " + String.valueOf(contentLength));
+                rw.close();
             }
         };
-        return new Handler[] { redirectHandler };
+        return new Handler[] { contentLengthHandler };
     }
     
     @Before
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        redirects = 0;
-        circular = false;
+        contentLength = null;
     }
     
     /**
-     * Tests if the plugin can handle one redirect
+     * Tests if the plugin can handle a missing Content-Length header
      * @throws Exception if anything goes wrong
      */
     @Test
-    public void oneRedirect() throws Exception {
-        redirects = 1;
-        
+    public void missingContentLength() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(makeSrc(REDIRECT));
+        t.src(makeSrc(CONTENT_LENGTH));
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("r: 0", dstContents);
+        assertEquals("cl: null", dstContents);
     }
     
     /**
-     * Tests if the plugin can handle ten redirects
+     * Tests if the plugin can handle an incorrect Content-Length header
      * @throws Exception if anything goes wrong
      */
     @Test
-    public void tenRedirect() throws Exception {
-        redirects = 10;
+    public void correctContentLength() throws Exception {
+        contentLength = "5";
         
         Download t = makeProjectAndTask();
-        t.src(makeSrc(REDIRECT));
+        t.src(makeSrc(CONTENT_LENGTH));
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("r: 0", dstContents);
+        assertEquals("cl: 5", dstContents);
     }
     
-   /**
-    * Tests if the plugin can handle circular redirects
-    * @throws Exception if anything goes wrong
-    */
-   @Test(expected = TaskExecutionException.class)
-   public void circularRedirect() throws Exception {
-       redirects = 10;
-       circular = true;
-       
-       Download t = makeProjectAndTask();
-       t.src(makeSrc(REDIRECT));
-       File dst = folder.newFile();
-       t.dest(dst);
-       t.execute();
-   }
-    
     /**
-     * Make sure the plugin fails with too many redirects
+     * Tests if the plugin can handle an incorrect Content-Length header
      * @throws Exception if anything goes wrong
      */
     @Test(expected = TaskExecutionException.class)
-    public void tooManyRedirects() throws Exception {
-        redirects = 51;
+    public void tooLargeContentLength() throws Exception {
+        contentLength = "10000";
         
         Download t = makeProjectAndTask();
-        t.src(makeSrc(REDIRECT));
+        t.src(makeSrc(CONTENT_LENGTH));
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();

@@ -12,98 +12,91 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package de.undercouch.gradle.tasks.download;
-
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
-import org.gradle.api.tasks.TaskExecutionException;
 import org.junit.Test;
-import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.ContextHandler;
-import org.mortbay.jetty.security.SslSocketConnector;
 
 /**
- * Tests if the plugin can handle HTTPS
+ * Tests if the plugin can handle compressed content
  * @author Michel Kraemer
  */
-public class SslTest extends TestBase {
-    private static final String SSL = "ssl";
-    
-    @Override
-    protected Server createServer() {
-        Server server = new Server();
-        
-        SslSocketConnector connector = new SslSocketConnector();
-        connector.setKeystore(this.getClass().getResource("/keystore").toString());
-        connector.setKeyPassword("gradle");
-        
-        //run server on any free port
-        connector.setPort(0);
-        
-        server.setConnectors(new Connector[] { connector });
-        
-        return server;
-    }
+public class CompressionTest extends TestBase {
+    private static final String COMPRESSED = "compressed";
     
     @Override
     protected Handler[] makeHandlers() throws IOException {
-        ContextHandler sslHandler = new ContextHandler("/" + SSL) {
+        ContextHandler compressionHandler = new ContextHandler("/" + COMPRESSED) {
             @Override
             public void handle(String target, HttpServletRequest request,
                     HttpServletResponse response, int dispatch)
                             throws IOException, ServletException {
+                String acceptEncoding = request.getHeader("Accept-Encoding");
+                boolean acceptGzip = "gzip".equals(acceptEncoding);
+                
                 response.setStatus(200);
-                PrintWriter rw = response.getWriter();
-                rw.write("Hello");
-                rw.close();
+                OutputStream os = response.getOutputStream();
+                if (acceptGzip) {
+                    response.setHeader("Content-Encoding", "gzip");
+                    GZIPOutputStream gos = new GZIPOutputStream(os);
+                    OutputStreamWriter osw = new OutputStreamWriter(gos);
+                    osw.write("Compressed");
+                    osw.close();
+                    gos.flush();
+                    gos.close();
+                } else {
+                    OutputStreamWriter osw = new OutputStreamWriter(os);
+                    osw.write("Uncompressed");
+                    osw.close();
+                }
+                os.close();
             }
         };
-        return new Handler[] { sslHandler };
+        return new Handler[] { compressionHandler };
     }
     
     /**
-     * Tests if the plugin can fetch a resource from a HTTPS URL accepting
-     * any certificate
+     * Tests if the plugin can handle compressed content
      * @throws Exception if anything goes wrong
      */
     @Test
-    public void acceptAnyCertificate() throws Exception {
+    public void compressed() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(makeSrc(SSL).replace("http", "https"));
+        t.src(makeSrc(COMPRESSED));
         File dst = folder.newFile();
         t.dest(dst);
-        t.acceptAnyCertificate(true);
-        assertTrue(t.isAcceptAnyCertificate());
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("Hello", dstContents);
+        assertEquals("Compressed", dstContents);
     }
     
     /**
-     * Tests if connecting to a HTTPS URL fails if the certificate is unknown
+     * Tests if the plugin can request uncompressed content
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = TaskExecutionException.class)
-    public void unknownCertificate() throws Exception {
+    @Test
+    public void uncompressed() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(makeSrc(SSL).replace("http", "https"));
+        t.src(makeSrc(COMPRESSED));
         File dst = folder.newFile();
         t.dest(dst);
-        assertFalse(t.isAcceptAnyCertificate());
+        t.compress(false);
         t.execute();
+
+        String dstContents = FileUtils.readFileToString(dst);
+        assertEquals("Uncompressed", dstContents);
     }
 }

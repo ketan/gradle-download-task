@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package de.undercouch.gradle.tasks.download;
-
 import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
+
+import de.undercouch.gradle.tasks.download.VerifyAction;
+import de.undercouch.gradle.tasks.download.VerifySpec;
 
 /**
  * Verifies a file's integrity by calculating its checksum.

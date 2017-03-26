@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package de.undercouch.gradle.tasks.download;
-
 import java.io.File;
 import java.security.MessageDigest;
 import java.util.HashMap;
@@ -22,6 +20,8 @@ import java.util.Map;
 import org.apache.commons.codec.binary.Hex;
 import org.gradle.api.tasks.TaskExecutionException;
 import org.junit.Test;
+
+import de.undercouch.gradle.tasks.download.VerifyAction;
 
 /**
  * Test the {@link VerifyAction}
